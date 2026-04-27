@@ -1,6 +1,7 @@
 package com.harriswebstudio.router;
 
 import com.google.gson.Gson;
+import com.harriswebstudio.router.config.ConfigHandler;
 import com.harriswebstudio.router.module.RouterModule;
 import com.harriswebstudio.router.route.RouteHandler;
 import com.harriswebstudio.router.server.ServerHandler;
@@ -30,9 +31,9 @@ public class Router {
 
     private final List<RouterModule> modules = new LinkedList<>();
 
-    public Router(RouterConfig config) {
+    public Router() {
         instance = this;
-        this.config = config;
+        this.config = ConfigHandler.loadConfig(new RouterConfig());
         this.threadPool = new QueuedThreadPool(
                 config.getMaxThreads(),
                 config.getMinThreads(),
