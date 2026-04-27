@@ -1,0 +1,123 @@
+package com.harriswebstudio.router.route;
+
+import com.harriswebstudio.router.Router;
+import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.module.impl.error.RouteErrorModule;
+import com.harriswebstudio.router.route.param.ParamResolver;
+import com.harriswebstudio.router.route.param.ParamRegistry;
+import com.harriswebstudio.router.route.response.AbstractRouteResponse;
+import com.harriswebstudio.router.route.response.impl.JsonResponse;
+import com.harriswebstudio.router.route.response.impl.TextResponse;
+import lombok.Getter;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.Request;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Getter
+public class Route {
+
+    public static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{([^/]+)}");
+
+    private final HttpMethod method;
+    private final String path;
+    private final Object handler;
+    private final Method handlerMethod;
+
+    private final Pattern pathPattern;
+    private final List<String> pathParamNames;
+
+    public Route(HttpMethod method, String path, Object handler, Method handlerMethod) {
+        this.method = method;
+        this.path = path;
+        this.handler = handler;
+        this.handlerMethod = handlerMethod;
+        this.pathParamNames = new ArrayList<>();
+        this.pathPattern = compilePath(path, pathParamNames);
+    }
+
+    public AbstractRouteResponse execute(Request request, RouteContext context) {
+        try {
+            Parameter[] parameters = handlerMethod.getParameters();
+            Object[] args = new Object[parameters.length];
+
+            for (int i = 0; i < parameters.length; i++)
+                args[i] = resolveParam(parameters[i], request, context);
+
+            handlerMethod.setAccessible(true);
+
+            Object result = handlerMethod.invoke(handler, args);
+            return toResponse(result);
+        } catch (Exception exception) {
+            RouteErrorModule<?> errorModule = Router.get().getModule(RouteErrorModule.class);
+            if (errorModule != null)
+                return errorModule.handle(exception);
+
+            return new TextResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error: " + exception.getMessage());
+        }
+    }
+
+    public boolean matches(String requestPath) {
+        return pathPattern.matcher(requestPath).matches();
+    }
+
+    public Map<String, String> extractPathParams(String requestPath) {
+        Map<String, String> params = new HashMap<>();
+        Matcher matcher = pathPattern.matcher(requestPath);
+
+        if (matcher.matches())
+            for (int i = 0; i < pathParamNames.size(); i++)
+                params.put(pathParamNames.get(i), matcher.group(i + 1));
+
+        return params;
+    }
+
+    private Object resolveParam(Parameter param, Request request, RouteContext context) {
+        if (param.getType().equals(RouteContext.class))
+            return context;
+
+        for (Map.Entry<Class<? extends Annotation>, ParamResolver> entry : ParamRegistry.PARAM_RESOLVERS.entrySet())
+            if (param.isAnnotationPresent(entry.getKey()))
+                return entry.getValue().resolve(param, request, context);
+
+        return null;
+    }
+
+    private AbstractRouteResponse toResponse(Object result) {
+        if (result instanceof AbstractRouteResponse response)
+            return response;
+
+        if (result instanceof String string)
+            return new TextResponse(HttpStatus.OK, string);
+
+        if (result != null)
+            return new JsonResponse(HttpStatus.OK, Router.GSON.toJsonTree(result));
+
+        return new TextResponse(HttpStatus.OK, "");
+    }
+
+    private static Pattern compilePath(String path, List<String> paramNames) {
+        StringBuilder regex = new StringBuilder();
+        Matcher matcher = PATH_PARAM_PATTERN.matcher(path);
+        int last = 0;
+
+        while (matcher.find()) {
+            regex.append(Pattern.quote(path.substring(last, matcher.start())));
+            regex.append("([^/]+)");
+            paramNames.add(matcher.group(1));
+            last = matcher.end();
+        }
+
+        regex.append(Pattern.quote(path.substring(last)));
+        return Pattern.compile(regex.toString());
+    }
+
+}
