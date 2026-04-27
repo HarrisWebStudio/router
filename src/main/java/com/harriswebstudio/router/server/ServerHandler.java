@@ -1,11 +1,13 @@
 package com.harriswebstudio.router.server;
 
 import com.harriswebstudio.router.Router;
+import com.harriswebstudio.router.module.impl.AssetsModule;
 import com.harriswebstudio.router.module.impl.RouteAfterModule;
 import com.harriswebstudio.router.module.impl.RouteBeforeModule;
 import com.harriswebstudio.router.route.Route;
 import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
+import com.harriswebstudio.router.route.response.impl.BytesResponse;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPartConfig;
@@ -26,6 +28,10 @@ public class ServerHandler extends Handler.Abstract {
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
+        AssetsModule assetsModule = router.getModule(AssetsModule.class);
+        if (assetsModule != null && assetsModule.handle(request, response, callback))
+            return true;
+
         String path = request.getHttpURI().getPath();
         Route route = router.getRouteHandler().getRoute(
                 HttpMethod.fromString(request.getMethod()), path);
@@ -74,7 +80,12 @@ public class ServerHandler extends Handler.Abstract {
     private void write(Response response, Callback callback, AbstractRouteResponse routeResponse) {
         response.setStatus(routeResponse.getStatus().getCode());
         response.getHeaders().put("Content-Type", routeResponse.getContentType());
-        response.write(true, ByteBuffer.wrap(routeResponse.getBody().getBytes(StandardCharsets.UTF_8)), callback);
+
+        if (routeResponse instanceof BytesResponse bytesResponse) {
+            response.write(true, ByteBuffer.wrap(bytesResponse.getBytes()), callback);
+        } else {
+            response.write(true, ByteBuffer.wrap(routeResponse.getBody().getBytes(StandardCharsets.UTF_8)), callback);
+        }
     }
 
 }

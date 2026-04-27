@@ -78,4 +78,11 @@ public enum HttpStatus {
     private final int code;
     private final HttpResponse response;
 
+    public static HttpStatus fromCode(int code) {
+        for (HttpStatus status : values())
+            if (status.code == code)
+                return status;
+        return INTERNAL_SERVER_ERROR;
+    }
+
 }

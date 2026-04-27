@@ -14,5 +14,9 @@ public class TextResponse extends AbstractRouteResponse {
         this.body = body;
     }
 
-}
+    public TextResponse(HttpStatus status, String contentType, String body) {
+        super(status, contentType);
+        this.body = body;
+    }
 
+}

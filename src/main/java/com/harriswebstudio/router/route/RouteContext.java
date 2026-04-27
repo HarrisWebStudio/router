@@ -1,9 +1,11 @@
 package com.harriswebstudio.router.route;
 
+import com.harriswebstudio.router.http.HttpStatus;
 import com.harriswebstudio.router.route.multipart.MultipartFile;
 import com.harriswebstudio.router.session.Session;
 import com.harriswebstudio.router.session.SessionStore;
 import lombok.Getter;
+import lombok.Setter;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
@@ -37,6 +39,12 @@ public class RouteContext {
     private Map<String, String> formFields;
     private List<MultipartFile> multipartFiles;
     private Session session;
+
+    @Getter
+    private Integer responseCode;
+    @Setter
+    @Getter
+    private String responseType;
 
     public RouteContext(Request request, Response response, Callback callback, Map<String, String> pathParams) {
         this.request = request;
@@ -232,6 +240,14 @@ public class RouteContext {
 
     public String getPathParam(String name) {
         return pathParams.get(name);
+    }
+
+    public void setResponseCode(int code) {
+        this.responseCode = code;
+    }
+
+    public void setResponseCode(HttpStatus status) {
+        this.responseCode = status.getCode();
     }
 
     private static Map<String, String> parseQuery(String query) {

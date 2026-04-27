@@ -6,6 +6,7 @@ import com.harriswebstudio.router.module.impl.error.RouteErrorModule;
 import com.harriswebstudio.router.route.param.ParamResolver;
 import com.harriswebstudio.router.route.param.ParamRegistry;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
+import com.harriswebstudio.router.route.response.impl.BytesResponse;
 import com.harriswebstudio.router.route.response.impl.JsonResponse;
 import com.harriswebstudio.router.route.response.impl.TextResponse;
 import lombok.Getter;
@@ -55,7 +56,7 @@ public class Route {
             handlerMethod.setAccessible(true);
 
             Object result = handlerMethod.invoke(handler, args);
-            return toResponse(result);
+            return toResponse(result, context);
         } catch (Exception exception) {
             RouteErrorModule<?> errorModule = Router.get().getModule(RouteErrorModule.class);
             if (errorModule != null)
@@ -91,17 +92,31 @@ public class Route {
         return null;
     }
 
-    private AbstractRouteResponse toResponse(Object result) {
+    private AbstractRouteResponse toResponse(Object result, RouteContext context) {
         if (result instanceof AbstractRouteResponse response)
             return response;
 
-        if (result instanceof String string)
-            return new TextResponse(HttpStatus.OK, string);
+        if (result instanceof byte[] bytes) {
+            String contentType = context.getResponseType() != null ? context.getResponseType() : "application/octet-stream";
+            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            return new BytesResponse(status, contentType, bytes);
+        }
 
-        if (result != null)
-            return new JsonResponse(HttpStatus.OK, Router.GSON.toJsonTree(result));
+        if (result instanceof String string) {
+            String contentType = context.getResponseType() != null ? context.getResponseType() : "text/plain";
+            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            return new TextResponse(status, contentType, string);
+        }
 
-        return new TextResponse(HttpStatus.OK, "");
+        if (result != null) {
+            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            return new JsonResponse(status, Router.GSON.toJsonTree(result));
+        }
+
+        if (context.getResponseCode() != null)
+            return new TextResponse(HttpStatus.fromCode(context.getResponseCode()), "text/plain", "");
+
+        return new TextResponse(HttpStatus.OK, "text/plain", "");
     }
 
     private static Pattern compilePath(String path, List<String> paramNames) {
