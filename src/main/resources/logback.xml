@@ -10,7 +10,7 @@
     </encoder>
   </appender>
 
-  <logger name="com.harriswebstudio.router" level="INFO" />
+  <logger name="com.harriswebstudio.*" level="INFO" />
 
   <root level="INFO">
     <appender-ref ref="Console"/>
