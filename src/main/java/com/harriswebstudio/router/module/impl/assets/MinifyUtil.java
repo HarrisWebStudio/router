@@ -1,4 +1,4 @@
-package com.harriswebstudio.router.minify;
+package com.harriswebstudio.router.module.impl.assets;
 
 import com.harriswebstudio.router.http.HttpStatus;
 import com.harriswebstudio.router.route.RouteContext;

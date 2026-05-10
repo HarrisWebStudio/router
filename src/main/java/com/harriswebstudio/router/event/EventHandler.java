@@ -14,7 +14,7 @@ public class EventHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EventHandler.class);
 
-    private final ConcurrentHashMap<Class<? extends Event>, CopyOnWriteArrayList<Consumer>> map = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Class<? extends Event>, CopyOnWriteArrayList<Consumer<Event>>> map = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
     public void registerListener(Object listenerObject) {
@@ -58,7 +58,7 @@ public class EventHandler {
     public void callEvent(Event event) {
         try {
             for (Serializable clazz = event.getClass(); clazz != null && clazz != Event.class; clazz = ((Class<Event>) clazz).getSuperclass()) {
-                CopyOnWriteArrayList<Consumer> list = map.get(clazz);
+                CopyOnWriteArrayList<Consumer<Event>> list = map.get(clazz);
 
                 if (list != null)
                     list.forEach(consumer -> consumer.accept(event));

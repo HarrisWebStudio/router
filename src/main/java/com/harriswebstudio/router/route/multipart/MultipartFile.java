@@ -1,16 +1,6 @@
 package com.harriswebstudio.router.route.multipart;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@Getter
-@RequiredArgsConstructor
-public class MultipartFile {
-
-    private final String fieldName;
-    private final String fileName;
-    private final String contentType;
-    private final byte[] bytes;
+public record MultipartFile(String fieldName, String fileName, String contentType, byte[] bytes) {
 
     public long getSize() {
         return bytes.length;

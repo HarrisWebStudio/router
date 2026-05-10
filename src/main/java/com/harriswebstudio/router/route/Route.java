@@ -62,6 +62,7 @@ public class Route {
             if (errorModule != null)
                 return errorModule.handle(exception);
 
+            Router.LOGGER.error("Error executing route: {} {}", method, path, exception);
             return new TextResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error: " + exception.getMessage());
         }
     }

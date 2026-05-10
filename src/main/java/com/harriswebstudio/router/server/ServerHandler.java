@@ -3,7 +3,7 @@ package com.harriswebstudio.router.server;
 import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.event.impl.route.RoutePostServeEvent;
 import com.harriswebstudio.router.event.impl.route.RouteServeEvent;
-import com.harriswebstudio.router.module.impl.AssetsModule;
+import com.harriswebstudio.router.module.impl.assets.AssetsModule;
 import com.harriswebstudio.router.module.impl.RouteAfterModule;
 import com.harriswebstudio.router.module.impl.RouteBeforeModule;
 import com.harriswebstudio.router.route.Route;

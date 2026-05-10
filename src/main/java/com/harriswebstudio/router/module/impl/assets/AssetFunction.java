@@ -1,4 +1,4 @@
-package com.harriswebstudio.router.minify;
+package com.harriswebstudio.router.module.impl.assets;
 
 @FunctionalInterface
 public interface AssetFunction<T, R> {

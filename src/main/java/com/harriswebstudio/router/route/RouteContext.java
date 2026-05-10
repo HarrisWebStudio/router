@@ -186,7 +186,7 @@ public class RouteContext {
 
     public MultipartFile getFile(String fieldName) {
         return getFiles().stream()
-                .filter(f -> f.getFieldName().equals(fieldName))
+                .filter(f -> f.fieldName().equals(fieldName))
                 .findFirst()
                 .orElse(null);
     }

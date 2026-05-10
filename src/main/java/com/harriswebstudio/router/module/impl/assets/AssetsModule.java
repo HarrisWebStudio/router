@@ -1,7 +1,5 @@
-package com.harriswebstudio.router.module.impl;
+package com.harriswebstudio.router.module.impl.assets;
 
-import com.harriswebstudio.router.minify.AssetExtension;
-import com.harriswebstudio.router.minify.MinifyUtil;
 import com.harriswebstudio.router.module.RouterModule;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jetty.server.Request;
