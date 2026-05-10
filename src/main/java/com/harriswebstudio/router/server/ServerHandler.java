@@ -1,6 +1,8 @@
 package com.harriswebstudio.router.server;
 
 import com.harriswebstudio.router.Router;
+import com.harriswebstudio.router.event.impl.route.RoutePostServeEvent;
+import com.harriswebstudio.router.event.impl.route.RouteServeEvent;
 import com.harriswebstudio.router.module.impl.AssetsModule;
 import com.harriswebstudio.router.module.impl.RouteAfterModule;
 import com.harriswebstudio.router.module.impl.RouteBeforeModule;
@@ -63,7 +65,7 @@ public class ServerHandler extends Handler.Abstract {
         if (beforeModule != null) {
             AbstractRouteResponse early = beforeModule.handle(context);
             if (early != null) {
-                write(response, callback, early);
+                write(null, context, response, callback, early);
                 return;
             }
         }
@@ -74,10 +76,11 @@ public class ServerHandler extends Handler.Abstract {
         if (afterModule != null)
             routeResponse = afterModule.handle(context, routeResponse);
 
-        write(response, callback, routeResponse);
+        router.getEventHandler().callEvent(new RouteServeEvent(route, context));
+        write(route, context, response, callback, routeResponse);
     }
 
-    private void write(Response response, Callback callback, AbstractRouteResponse routeResponse) {
+    private void write(Route route, RouteContext context, Response response, Callback callback, AbstractRouteResponse routeResponse) {
         response.setStatus(routeResponse.getStatus().getCode());
         response.getHeaders().put("Content-Type", routeResponse.getContentType());
 
@@ -86,6 +89,9 @@ public class ServerHandler extends Handler.Abstract {
         } else {
             response.write(true, ByteBuffer.wrap(routeResponse.getBody().getBytes(StandardCharsets.UTF_8)), callback);
         }
+
+        if (route != null)
+            router.getEventHandler().callEvent(new RoutePostServeEvent(route, context, routeResponse));
     }
 
 }

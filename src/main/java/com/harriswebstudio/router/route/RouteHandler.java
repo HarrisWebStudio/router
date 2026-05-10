@@ -1,5 +1,7 @@
 package com.harriswebstudio.router.route;
 
+import com.harriswebstudio.router.Router;
+import com.harriswebstudio.router.event.impl.route.RouteRegisterEvent;
 import com.harriswebstudio.router.route.annotation.AnnotationRegistry;
 import com.harriswebstudio.router.route.annotation.Path;
 import lombok.Getter;
@@ -47,6 +49,10 @@ public class RouteHandler {
 
             Route route = new Route(httpMethod, fullPath, object, method);
             routes.add(route);
+
+            Router.get().getEventHandler().callEvent(
+                    new RouteRegisterEvent(route));
+
             LOGGER.info("Registered route {} {}", httpMethod, fullPath);
         }
     }
