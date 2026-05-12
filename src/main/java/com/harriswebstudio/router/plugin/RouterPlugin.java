@@ -56,6 +56,15 @@ public abstract class RouterPlugin {
         return false;
     }
 
+    public final <T extends PluginModule> T getModule(Class<T> clazz) {
+        for (PluginModule module : modules) {
+            if (module.getClass().equals(clazz))
+                return (T) module;
+        }
+
+        return null;
+    }
+
     public final boolean isEnabled() {
         return Router.get().getPluginHandler().isPluginEnabled(getClass());
     }
