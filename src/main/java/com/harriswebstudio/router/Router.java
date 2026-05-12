@@ -85,7 +85,7 @@ public class Router {
         }
     }
 
-    public final void registerPlugins(RouterPlugin... plugins) {
+    public final void install(RouterPlugin... plugins) {
         for (RouterPlugin plugin : plugins)
             pluginHandler.registerPlugin(plugin);
     }
@@ -95,28 +95,28 @@ public class Router {
             routeHandler.registerRoute(object);
     }
 
-    public void get(String path, RouteFunction function) {
+    public final void get(String path, RouteFunction function) {
         routeHandler.registerRoute(HttpMethod.GET, path, function);
     }
 
-    public void post(String path, RouteFunction function) {
+    public final void post(String path, RouteFunction function) {
         routeHandler.registerRoute(HttpMethod.POST, path, function);
     }
 
-    public void put(String path, RouteFunction function) {
+    public final void put(String path, RouteFunction function) {
         routeHandler.registerRoute(HttpMethod.PUT, path, function);
     }
 
-    public void patch(String path, RouteFunction function) {
+    public final void patch(String path, RouteFunction function) {
         routeHandler.registerRoute(HttpMethod.PATCH, path, function);
     }
 
-    public void delete(String path, RouteFunction function) {
+    public final void delete(String path, RouteFunction function) {
         routeHandler.registerRoute(HttpMethod.DELETE, path, function);
     }
 
-    public final void registerRoute(HttpMethod method, String path, RouteFunction fn) {
-        routeHandler.registerRoute(method, path, fn);
+    public final void registerRoute(HttpMethod method, String path, RouteFunction function) {
+        routeHandler.registerRoute(method, path, function);
     }
 
     public final void registerModules(RouterModule... modules) {
