@@ -4,7 +4,6 @@ import com.harriswebstudio.router.event.annotation.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -55,17 +54,27 @@ public class EventHandler {
         }
     }
 
-    public void callEvent(Event event) {
+    public <T extends Event> T callEvent(T event) {
         try {
-            for (Serializable clazz = event.getClass(); clazz != null && clazz != Event.class; clazz = ((Class<Event>) clazz).getSuperclass()) {
+            for (Class<?> clazz = event.getClass(); clazz != null && Event.class.isAssignableFrom(clazz); clazz = clazz.getSuperclass()) {
                 CopyOnWriteArrayList<Consumer<Event>> list = map.get(clazz);
 
-                if (list != null)
-                    list.forEach(consumer -> consumer.accept(event));
+                if (list != null) {
+                    for (Consumer<Event> consumer : list) {
+                        if (event instanceof Cancellable cancellable && cancellable.isCancelled())
+                            break;
+
+                        consumer.accept(event);
+                    }
+                }
+
+                if (event instanceof Cancellable cancellable && cancellable.isCancelled())
+                    break;
             }
         } catch (Exception exception) {
-            exception.printStackTrace();
+            LOGGER.error("Error calling event {}", event.getClass().getSimpleName(), exception);
         }
+        return event;
     }
 
 }
