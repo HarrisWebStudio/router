@@ -9,10 +9,11 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class RoutePostServeEvent extends Event {
+public class PostRouteServeEvent extends Event {
 
     private final Route route;
     private final RouteContext context;
     private final AbstractRouteResponse response;
+    private final long executionTime;
 
 }

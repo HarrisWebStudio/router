@@ -2,7 +2,7 @@ package com.harriswebstudio.router.server;
 
 import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.event.impl.route.PreRouteServeEvent;
-import com.harriswebstudio.router.event.impl.route.RoutePostServeEvent;
+import com.harriswebstudio.router.event.impl.route.PostRouteServeEvent;
 import com.harriswebstudio.router.event.impl.route.RouteServeEvent;
 import com.harriswebstudio.router.module.impl.assets.AssetsModule;
 import com.harriswebstudio.router.module.impl.RouteAfterModule;
@@ -34,6 +34,7 @@ public class ServerHandler extends Handler.Abstract {
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
+        long requestStartTime = System.currentTimeMillis();
         AssetsModule assetsModule = router.getModule(AssetsModule.class);
         if (assetsModule != null && assetsModule.handle(request, response, callback))
             return true;
@@ -49,7 +50,7 @@ public class ServerHandler extends Handler.Abstract {
         ));
 
         if (preServeEvent.isCancelled()) {
-            write(null, null, response, callback, preServeEvent.getCancelledResponse());
+            write(null, null, requestStartTime, response, callback, preServeEvent.getCancelledResponse());
             return true;
         }
 
@@ -64,23 +65,23 @@ public class ServerHandler extends Handler.Abstract {
             MultiPartFormData.getParts(request, request, contentType, new MultiPartConfig.Builder().build()).forEach(parts -> {
                 Map<String, String> pathParams = route.extractPathParams(path);
                 RouteContext context = new RouteContext(request, response, callback, pathParams);
-                runRoute(route, request, response, callback, context);
+                runRoute(route, request, requestStartTime, response, callback, context);
             });
             return true;
         }
 
         Map<String, String> pathParams = route.extractPathParams(path);
         RouteContext context = new RouteContext(request, response, callback, pathParams);
-        runRoute(route, request, response, callback, context);
+        runRoute(route, request, requestStartTime, response, callback, context);
         return true;
     }
 
-    private void runRoute(Route route, Request request, Response response, Callback callback, RouteContext context) {
+    private void runRoute(Route route, Request request, long requestStartTime, Response response, Callback callback, RouteContext context) {
         RouteBeforeModule beforeModule = router.getModule(RouteBeforeModule.class);
         if (beforeModule != null) {
             AbstractRouteResponse early = beforeModule.handle(context);
             if (early != null) {
-                write(null, context, response, callback, early);
+                write(null, context, requestStartTime, response, callback, early);
                 return;
             }
         }
@@ -92,10 +93,10 @@ public class ServerHandler extends Handler.Abstract {
             routeResponse = afterModule.handle(context, routeResponse);
 
         router.getEventHandler().callEvent(new RouteServeEvent(route, context, routeResponse));
-        write(route, context, response, callback, routeResponse);
+        write(route, context, requestStartTime, response, callback, routeResponse);
     }
 
-    private void write(Route route, RouteContext context, Response response, Callback callback, AbstractRouteResponse routeResponse) {
+    private void write(Route route, RouteContext context, long requestStartTime, Response response, Callback callback, AbstractRouteResponse routeResponse) {
         response.setStatus(routeResponse.getStatus().getCode());
         response.getHeaders().put("Content-Type", routeResponse.getContentType());
 
@@ -108,8 +109,11 @@ public class ServerHandler extends Handler.Abstract {
             response.write(true, ByteBuffer.wrap(routeResponse.getBody().getBytes(StandardCharsets.UTF_8)), callback);
         }
 
-        if (route != null)
-            router.getEventHandler().callEvent(new RoutePostServeEvent(route, context, routeResponse));
+        router.getEventHandler().callEvent(new PostRouteServeEvent(
+                route,
+                context,
+                routeResponse,
+                System.currentTimeMillis() - requestStartTime));
     }
 
     public String getRealIp(Request request) {
