@@ -48,13 +48,26 @@ public class RouteHandler {
                 fullPath = "/" + fullPath;
 
             Route route = new Route(httpMethod, fullPath, object, method);
-            routes.add(route);
-
-            Router.get().getEventHandler().callEvent(
-                    new RouteRegisterEvent(route));
-
-            LOGGER.info("Registered route {} {}", httpMethod, fullPath);
+            initializeRoute(route, httpMethod, fullPath);
         }
+    }
+
+    public void registerRoute(HttpMethod httpMethod, String path, RouteFunction function) {
+        String fullPath = path.replaceAll("/+", "/");
+        if (!fullPath.startsWith("/"))
+            fullPath = "/" + fullPath;
+
+        Route route = new Route(httpMethod, fullPath, function);
+        initializeRoute(route, httpMethod, fullPath);
+    }
+
+    public void initializeRoute(Route route, HttpMethod httpMethod, String fullPath) {
+        routes.add(route);
+
+        Router.get().getEventHandler().callEvent(
+                new RouteRegisterEvent(route));
+
+        LOGGER.info("Registered route {} {}", httpMethod, fullPath);
     }
 
     public Route getRoute(HttpMethod method, String path) {
@@ -62,6 +75,10 @@ public class RouteHandler {
                 .filter(route -> route.getMethod().equals(method) && route.matches(path))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public boolean isMavInitialized() {
+        return routes.stream().anyMatch(Route::isMavInitialized);
     }
 
 }

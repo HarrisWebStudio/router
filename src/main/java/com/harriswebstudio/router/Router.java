@@ -8,10 +8,12 @@ import com.harriswebstudio.router.plugin.RouterPlugin;
 import com.harriswebstudio.router.event.EventHandler;
 import com.harriswebstudio.router.event.impl.RouterShutdownEvent;
 import com.harriswebstudio.router.event.impl.RouterStartEvent;
+import com.harriswebstudio.router.route.RouteFunction;
 import com.harriswebstudio.router.route.RouteHandler;
 import com.harriswebstudio.router.server.ServerHandler;
 import lombok.Getter;
 import lombok.Setter;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -91,6 +93,30 @@ public class Router {
     public final void registerRoutes(Object... objects) {
         for (Object object : objects)
             routeHandler.registerRoute(object);
+    }
+
+    public void get(String path, RouteFunction function) {
+        routeHandler.registerRoute(HttpMethod.GET, path, function);
+    }
+
+    public void post(String path, RouteFunction function) {
+        routeHandler.registerRoute(HttpMethod.POST, path, function);
+    }
+
+    public void put(String path, RouteFunction function) {
+        routeHandler.registerRoute(HttpMethod.PUT, path, function);
+    }
+
+    public void patch(String path, RouteFunction function) {
+        routeHandler.registerRoute(HttpMethod.PATCH, path, function);
+    }
+
+    public void delete(String path, RouteFunction function) {
+        routeHandler.registerRoute(HttpMethod.DELETE, path, function);
+    }
+
+    public final void registerRoute(HttpMethod method, String path, RouteFunction fn) {
+        routeHandler.registerRoute(method, path, fn);
     }
 
     public final void registerModules(RouterModule... modules) {

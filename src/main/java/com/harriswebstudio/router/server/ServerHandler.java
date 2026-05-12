@@ -1,6 +1,7 @@
 package com.harriswebstudio.router.server;
 
 import com.harriswebstudio.router.Router;
+import com.harriswebstudio.router.event.impl.route.PreRouteServeEvent;
 import com.harriswebstudio.router.event.impl.route.RoutePostServeEvent;
 import com.harriswebstudio.router.event.impl.route.RouteServeEvent;
 import com.harriswebstudio.router.module.impl.assets.AssetsModule;
@@ -19,6 +20,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -37,6 +41,17 @@ public class ServerHandler extends Handler.Abstract {
         String path = request.getHttpURI().getPath();
         Route route = router.getRouteHandler().getRoute(
                 HttpMethod.fromString(request.getMethod()), path);
+
+        PreRouteServeEvent preServeEvent = router.getEventHandler().callEvent(new PreRouteServeEvent(
+                path,
+                request,
+                getRealIp(request)
+        ));
+
+        if (preServeEvent.isCancelled()) {
+            write(null, null, response, callback, preServeEvent.getCancelledResponse());
+            return true;
+        }
 
         if (route == null) {
             response.setStatus(404);
@@ -76,13 +91,16 @@ public class ServerHandler extends Handler.Abstract {
         if (afterModule != null)
             routeResponse = afterModule.handle(context, routeResponse);
 
-        router.getEventHandler().callEvent(new RouteServeEvent(route, context));
+        router.getEventHandler().callEvent(new RouteServeEvent(route, context, routeResponse));
         write(route, context, response, callback, routeResponse);
     }
 
     private void write(Route route, RouteContext context, Response response, Callback callback, AbstractRouteResponse routeResponse) {
         response.setStatus(routeResponse.getStatus().getCode());
         response.getHeaders().put("Content-Type", routeResponse.getContentType());
+
+        routeResponse.getHeaders().forEach((key, value) ->
+                response.getHeaders().put(key, value));
 
         if (routeResponse instanceof BytesResponse bytesResponse) {
             response.write(true, ByteBuffer.wrap(bytesResponse.getBytes()), callback);
@@ -92,6 +110,38 @@ public class ServerHandler extends Handler.Abstract {
 
         if (route != null)
             router.getEventHandler().callEvent(new RoutePostServeEvent(route, context, routeResponse));
+    }
+
+    public String getRealIp(Request request) {
+        if (request == null)
+            return null;
+
+        String forwardedForHeader = request.getHeaders().get("X-Forwarded-For");
+        if (forwardedForHeader != null && !forwardedForHeader.isBlank())
+            return forwardedForHeader.split(",")[0].trim();
+
+        String forwardedHeader = request.getHeaders().get("Forwarded");
+        if (forwardedHeader != null && !forwardedHeader.isBlank()) {
+            for (String part : forwardedHeader.split(";")) {
+                part = part.trim();
+
+                if (part.startsWith("for="))
+                    return part.substring(4).replace("\"", "");
+            }
+        }
+
+        SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
+
+        if (remote instanceof InetSocketAddress socketAddress) {
+            InetAddress address = socketAddress.getAddress();
+
+            if (address != null)
+                return address.getHostAddress();
+
+            return socketAddress.getHostString();
+        }
+
+        return remote != null ? remote.toString() : null;
     }
 
 }

@@ -9,7 +9,10 @@ import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import com.harriswebstudio.router.route.response.impl.BytesResponse;
 import com.harriswebstudio.router.route.response.impl.JsonResponse;
 import com.harriswebstudio.router.route.response.impl.TextResponse;
+import com.harriswebstudio.router.route.response.mav.MavResponse;
+import com.harriswebstudio.router.route.response.mav.ModelAndView;
 import lombok.Getter;
+import lombok.Setter;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 
@@ -32,21 +35,39 @@ public class Route {
     private final String path;
     private final Object handler;
     private final Method handlerMethod;
+    private final RouteFunction routeFunction;
 
     private final Pattern pathPattern;
     private final List<String> pathParamNames;
+
+    @Setter
+    private boolean mavInitialized = false;
 
     public Route(HttpMethod method, String path, Object handler, Method handlerMethod) {
         this.method = method;
         this.path = path;
         this.handler = handler;
         this.handlerMethod = handlerMethod;
+        this.routeFunction = null;
+        this.pathParamNames = new ArrayList<>();
+        this.pathPattern = compilePath(path, pathParamNames);
+    }
+
+    public Route(HttpMethod method, String path, RouteFunction routeFunction) {
+        this.method = method;
+        this.path = path;
+        this.handler = null;
+        this.handlerMethod = null;
+        this.routeFunction = routeFunction;
         this.pathParamNames = new ArrayList<>();
         this.pathPattern = compilePath(path, pathParamNames);
     }
 
     public AbstractRouteResponse execute(Request request, RouteContext context) {
         try {
+            if (routeFunction != null)
+                return toResponse(routeFunction.handle(context), context);
+
             Parameter[] parameters = handlerMethod.getParameters();
             Object[] args = new Object[parameters.length];
 
@@ -94,8 +115,21 @@ public class Route {
     }
 
     private AbstractRouteResponse toResponse(Object result, RouteContext context) {
-        if (result instanceof AbstractRouteResponse response)
+        if (result instanceof AbstractRouteResponse response) {
+            if (response instanceof MavResponse)
+                mavInitialized = true;
+            if (context.getResponseType() != null)
+                response.setContentType(context.getResponseType());
+            if (context.getResponseCode() != null)
+                response.setStatus(HttpStatus.fromCode(context.getResponseCode()));
             return response;
+        }
+
+        if (result instanceof ModelAndView mav) {
+            mavInitialized = true;
+            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            return new MavResponse(status, mav);
+        }
 
         if (result instanceof byte[] bytes) {
             String contentType = context.getResponseType() != null ? context.getResponseType() : "application/octet-stream";

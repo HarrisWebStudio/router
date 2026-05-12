@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public class JsonResponse extends AbstractRouteResponse {
 
-    private static final Gson GSON = new Gson();
+    public static final Gson GSON = new Gson();
 
     private final JsonElement element;
 
