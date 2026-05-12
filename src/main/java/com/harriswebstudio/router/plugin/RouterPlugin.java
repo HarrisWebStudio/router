@@ -30,7 +30,7 @@ public abstract class RouterPlugin {
             Router.get().getEventHandler().registerListener(object);
     }
 
-    public <T extends RouterPlugin> T withModule(PluginModule module) {
+    public final  <T extends RouterPlugin> T withModule(PluginModule module) {
         this.modules.add(module);
 
         for (Object listener : module.getListeners())
@@ -45,6 +45,15 @@ public abstract class RouterPlugin {
             withModule(module);
 
         return (T) this;
+    }
+
+    public final boolean isModuleEnabled(Class<? extends RouterPlugin> clazz) {
+        for (PluginModule module : modules) {
+            if (module.getClass().getSimpleName().equals(clazz.getSimpleName()))
+                return true;
+        }
+
+        return false;
     }
 
     public final boolean isEnabled() {
