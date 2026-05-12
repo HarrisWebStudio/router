@@ -36,7 +36,7 @@ public class PluginHandler {
         long startTime = System.currentTimeMillis();
 
         try {
-            plugin.onEnable(router);
+            plugin.onEnable();
             enabledPluginMap.put(annotation.value().toLowerCase(), plugin);
 
             LOGGER.info(
