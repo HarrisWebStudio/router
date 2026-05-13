@@ -4,6 +4,7 @@ import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.event.impl.route.PreRouteServeEvent;
 import com.harriswebstudio.router.event.impl.route.PostRouteServeEvent;
 import com.harriswebstudio.router.event.impl.route.RouteServeEvent;
+import com.harriswebstudio.router.http.HttpStatus;
 import com.harriswebstudio.router.module.impl.assets.AssetsModule;
 import com.harriswebstudio.router.module.impl.RouteAfterModule;
 import com.harriswebstudio.router.module.impl.RouteBeforeModule;
@@ -11,6 +12,7 @@ import com.harriswebstudio.router.route.Route;
 import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import com.harriswebstudio.router.route.response.impl.BytesResponse;
+import com.harriswebstudio.router.route.response.impl.ErrorResponse;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPartConfig;
@@ -50,13 +52,12 @@ public class ServerHandler extends Handler.Abstract {
         ));
 
         if (preServeEvent.isCancelled()) {
-            write(null, null, requestStartTime, response, callback, preServeEvent.getCancelledResponse());
+            write(null, null, request.getMethod(), requestStartTime, response, callback, preServeEvent.getCancelledResponse());
             return true;
         }
 
         if (route == null) {
-            response.setStatus(404);
-            response.write(true, ByteBuffer.wrap("Not Found".getBytes(StandardCharsets.UTF_8)), callback);
+            write(null, null, request.getMethod(), requestStartTime, response, callback, new ErrorResponse(HttpStatus.NOT_FOUND, "Not Found"));
             return true;
         }
 
@@ -81,7 +82,7 @@ public class ServerHandler extends Handler.Abstract {
         if (beforeModule != null) {
             AbstractRouteResponse early = beforeModule.handle(context);
             if (early != null) {
-                write(null, context, requestStartTime, response, callback, early);
+                write(null, context, route.getMethod().name(), requestStartTime, response, callback, early);
                 return;
             }
         }
@@ -93,10 +94,12 @@ public class ServerHandler extends Handler.Abstract {
             routeResponse = afterModule.handle(context, routeResponse);
 
         router.getEventHandler().callEvent(new RouteServeEvent(route, context, routeResponse));
-        write(route, context, requestStartTime, response, callback, routeResponse);
+        write(route, context, route.getMethod().name(), requestStartTime, response, callback, routeResponse);
     }
 
-    private void write(Route route, RouteContext context, long requestStartTime, Response response, Callback callback, AbstractRouteResponse routeResponse) {
+    private void write(Route route, RouteContext context, String method,
+                       long requestStartTime, Response response,
+                       Callback callback, AbstractRouteResponse routeResponse) {
         response.setStatus(routeResponse.getStatus().getCode());
         response.getHeaders().put("Content-Type", routeResponse.getContentType());
 
@@ -113,6 +116,7 @@ public class ServerHandler extends Handler.Abstract {
                 route,
                 context,
                 routeResponse,
+                method,
                 System.currentTimeMillis() - requestStartTime));
     }
 

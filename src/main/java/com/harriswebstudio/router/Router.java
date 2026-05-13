@@ -2,6 +2,7 @@ package com.harriswebstudio.router;
 
 import com.google.gson.Gson;
 import com.harriswebstudio.router.config.ConfigHandler;
+import com.harriswebstudio.router.mav.AbstractMav;
 import com.harriswebstudio.router.module.RouterModule;
 import com.harriswebstudio.router.plugin.PluginHandler;
 import com.harriswebstudio.router.plugin.RouterPlugin;
@@ -133,6 +134,10 @@ public class Router {
         modules.add(module);
     }
 
+    public final void mav(AbstractMav mav) {
+        routeHandler.setMavImplementation(mav);
+    }
+
     @SuppressWarnings("unchecked")
     public final <T extends RouterModule> T getModule(Class<T> moduleClass) {
         return (T) modules.stream()
@@ -147,6 +152,8 @@ public class Router {
 
     public final void start() {
         try {
+            pluginHandler.initializeAll();
+
             server.start();
             server.join();
 

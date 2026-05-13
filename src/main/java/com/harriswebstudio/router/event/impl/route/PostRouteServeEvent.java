@@ -14,6 +14,7 @@ public class PostRouteServeEvent extends Event {
     private final Route route;
     private final RouteContext context;
     private final AbstractRouteResponse response;
+    private final String method;
     private final long executionTime;
 
 }

@@ -5,7 +5,6 @@ import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.http.HttpStatus;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import com.harriswebstudio.router.route.response.mav.ModelAndView;
-import com.harriswebstudio.router.route.response.mav.ThymeleafEngine;
 import org.thymeleaf.context.Context;
 
 public class ErrorResponse extends AbstractRouteResponse {
@@ -20,14 +19,12 @@ public class ErrorResponse extends AbstractRouteResponse {
     @Override
     public String getBody() {
         if (Router.get().getRouteHandler().isMavInitialized()) {
-            Context context = new Context();
             ModelAndView view = new ModelAndView("error");
 
             view.put("code", getStatus().getCode());
             view.put("message", message);
 
-            context.setVariables(view.getModel());
-            return ThymeleafEngine.get().process(view.getViewName(), context);
+            return Router.get().getRouteHandler().getMavImplementation().process(view);
         }
 
         JsonObject object = new JsonObject();

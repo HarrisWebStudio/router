@@ -20,4 +20,8 @@ public @interface PluginInfo {
 
     String[] authors() default "";
 
+    String[] dependencies() default "";
+
+    String[] softDependencies() default "";
+
 }

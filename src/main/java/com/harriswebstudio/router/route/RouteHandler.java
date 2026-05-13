@@ -2,9 +2,12 @@ package com.harriswebstudio.router.route;
 
 import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.event.impl.route.RouteRegisterEvent;
+import com.harriswebstudio.router.mav.AbstractMav;
+import com.harriswebstudio.router.mav.thymeleaf.ThymeleafMav;
 import com.harriswebstudio.router.route.annotation.AnnotationRegistry;
 import com.harriswebstudio.router.route.annotation.Path;
 import lombok.Getter;
+import lombok.Setter;
 import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +22,9 @@ public class RouteHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteHandler.class);
 
     private final List<Route> routes = new ArrayList<>();
+
+    @Setter
+    private AbstractMav mavImplementation = new ThymeleafMav();
 
     public void registerRoute(Object object) {
         String basePath = "";
