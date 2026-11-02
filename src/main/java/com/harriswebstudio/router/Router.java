@@ -125,6 +125,10 @@ public class Router {
             registerModule(module);
     }
 
+    public final void mavErrors(boolean mavErrors) {
+        routeHandler.setMavErrors(mavErrors);
+    }
+
     public final void registerModule(RouterModule module) {
         if (!module.canEnable()) {
             log(Level.WARN, "Module %s did not register successfully and will be skipped.", module.getClass().getSimpleName());

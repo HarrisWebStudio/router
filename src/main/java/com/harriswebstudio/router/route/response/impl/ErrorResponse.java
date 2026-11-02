@@ -3,9 +3,10 @@ package com.harriswebstudio.router.route.response.impl;
 import com.google.gson.JsonObject;
 import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.route.RouteContext;
+import com.harriswebstudio.router.route.RouteHandler;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import com.harriswebstudio.router.route.response.mav.ModelAndView;
-import org.thymeleaf.context.Context;
 
 public class ErrorResponse extends AbstractRouteResponse {
 
@@ -17,14 +18,15 @@ public class ErrorResponse extends AbstractRouteResponse {
     }
 
     @Override
-    public String getBody() {
-        if (Router.get().getRouteHandler().isMavInitialized()) {
+    public String getBody(RouteContext context) {
+        RouteHandler routeHandler = Router.get().getRouteHandler();
+        if (routeHandler.isMavInitialized() && routeHandler.isMavErrors()) {
             ModelAndView view = new ModelAndView("error");
 
             view.put("code", getStatus().getCode());
             view.put("message", message);
 
-            return Router.get().getRouteHandler().getMavImplementation().process(view);
+            return routeHandler.getMavImplementation().process(view, context);
         }
 
         JsonObject object = new JsonObject();

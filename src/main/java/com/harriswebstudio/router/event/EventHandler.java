@@ -29,8 +29,7 @@ public class EventHandler {
             if (params.length != 1 || !Event.class.isAssignableFrom(params[0])) {
                 LOGGER.warn(
                         "Method {}.{} is annotated with @Listener but does not accept a single Event parameter – skipped",
-                        clazz.getName(), method.getName()
-                );
+                        clazz.getName(), method.getName());
                 continue;
             }
 

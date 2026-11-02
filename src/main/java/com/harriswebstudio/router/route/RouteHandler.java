@@ -17,14 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Getter
+@Setter
 public class RouteHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteHandler.class);
-
     private final List<Route> routes = new ArrayList<>();
 
-    @Setter
     private AbstractMav mavImplementation = new ThymeleafMav();
+    private boolean mavErrors = true;
 
     public void registerRoute(Object object) {
         String basePath = "";

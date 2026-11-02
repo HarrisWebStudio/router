@@ -2,7 +2,9 @@ package com.harriswebstudio.router.route.response.impl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import lombok.Getter;
 
@@ -18,8 +20,17 @@ public class JsonResponse extends AbstractRouteResponse {
         this.element = element;
     }
 
+    public JsonResponse(HttpStatus status, String message) {
+        super(status, "application/json");
+
+        JsonObject object = new JsonObject();
+        object.addProperty("message", message);
+
+        this.element = object;
+    }
+
     @Override
-    public String getBody() {
+    public String getBody(RouteContext context) {
         return GSON.toJson(element);
     }
 

@@ -2,6 +2,7 @@ package com.harriswebstudio.router.route.response.mav;
 
 import com.harriswebstudio.router.Router;
 import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 
 public class MavResponse extends AbstractRouteResponse {
@@ -18,8 +19,10 @@ public class MavResponse extends AbstractRouteResponse {
     }
 
     @Override
-    public String getBody() {
-        return Router.get().getRouteHandler().getMavImplementation().process(view);
+    public String getBody(RouteContext context) {
+        return Router.get().getRouteHandler()
+                .getMavImplementation()
+                .process(view, context);
     }
 
 }

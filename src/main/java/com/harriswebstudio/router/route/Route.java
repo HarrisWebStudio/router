@@ -7,6 +7,7 @@ import com.harriswebstudio.router.route.param.ParamResolver;
 import com.harriswebstudio.router.route.param.ParamRegistry;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import com.harriswebstudio.router.route.response.impl.BytesResponse;
+import com.harriswebstudio.router.route.response.impl.ErrorResponse;
 import com.harriswebstudio.router.route.response.impl.JsonResponse;
 import com.harriswebstudio.router.route.response.impl.TextResponse;
 import com.harriswebstudio.router.route.response.mav.MavResponse;
@@ -84,7 +85,10 @@ public class Route {
                 return errorModule.handle(exception);
 
             Router.LOGGER.error("Error executing route: {} {}", method, path, exception);
-            return new TextResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error: " + exception.getMessage());
+            return new ErrorResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    exception.getMessage()
+            );
         }
     }
 
@@ -118,38 +122,40 @@ public class Route {
         if (result instanceof AbstractRouteResponse response) {
             if (response instanceof MavResponse)
                 mavInitialized = true;
+
             if (context.getResponseType() != null)
                 response.setContentType(context.getResponseType());
+
             if (context.getResponseCode() != null)
                 response.setStatus(HttpStatus.fromCode(context.getResponseCode()));
+
             return response;
         }
 
+        HttpStatus status = context.getResponseCode() != null
+                ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+
         if (result instanceof ModelAndView mav) {
             mavInitialized = true;
-            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
             return new MavResponse(status, mav);
         }
 
         if (result instanceof byte[] bytes) {
-            String contentType = context.getResponseType() != null ? context.getResponseType() : "application/octet-stream";
-            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            String contentType = context.getResponseType() != null
+                    ? context.getResponseType() : "application/octet-stream";
+
             return new BytesResponse(status, contentType, bytes);
         }
 
         if (result instanceof String string) {
-            String contentType = context.getResponseType() != null ? context.getResponseType() : "text/plain";
-            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+            String contentType = context.getResponseType() != null
+                    ? context.getResponseType() : "text/plain";
+
             return new TextResponse(status, contentType, string);
         }
 
-        if (result != null) {
-            HttpStatus status = context.getResponseCode() != null ? HttpStatus.fromCode(context.getResponseCode()) : HttpStatus.OK;
+        if (result != null)
             return new JsonResponse(status, Router.GSON.toJsonTree(result));
-        }
-
-        if (context.getResponseCode() != null)
-            return new TextResponse(HttpStatus.fromCode(context.getResponseCode()), "text/plain", "");
 
         return new TextResponse(HttpStatus.OK, "text/plain", "");
     }

@@ -7,7 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -22,104 +26,10 @@ public class PluginHandler {
     private final Router router;
 
     public void initializeAll() {
-        Map<String, RouterPlugin> candidates = new LinkedHashMap<>();
-        for (RouterPlugin plugin : temporaryPlugins) {
-            if (!plugin.getClass().isAnnotationPresent(PluginInfo.class)) {
-                LOGGER.warn("Plugin class {} has no @PluginInfo – skipped", plugin.getClass().getName());
-                continue;
-            }
-            String name = info(plugin).value().toLowerCase();
-            if (candidates.containsKey(name)) {
-                LOGGER.warn("Duplicate plugin name '{}' – second entry ignored", name);
-                continue;
-            }
-            candidates.put(name, plugin);
-        }
+        PluginDependencyResolver.Result result = PluginDependencyResolver.resolve(temporaryPlugins, enabledPluginMap.keySet());
 
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            Iterator<Map.Entry<String, RouterPlugin>> it = candidates.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<String, RouterPlugin> entry = it.next();
-                for (String dependency : info(entry.getValue()).dependencies()) {
-                    String depId = dependency.toLowerCase();
-
-                    if (depId.isBlank())
-                        continue;
-
-                    if (!candidates.containsKey(depId) && !enabledPluginMap.containsKey(depId)) {
-                        LOGGER.error("Plugin '{}' requires '{}' which is not present – it will not be loaded", info(entry.getValue()).value(), dependency);
-                        disabledPluginMap.put(entry.getKey(), entry.getValue());
-                        it.remove();
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        Map<String, Set<String>> inEdges = new LinkedHashMap<>();
-        Map<String, Set<String>> outEdges = new LinkedHashMap<>();
-
-        for (String name : candidates.keySet()) {
-            inEdges.put(name, new LinkedHashSet<>());
-            outEdges.put(name, new LinkedHashSet<>());
-        }
-
-        for (Map.Entry<String, RouterPlugin> entry : candidates.entrySet()) {
-            String name = entry.getKey();
-            PluginInfo pluginInfo = info(entry.getValue());
-            for (String dependency : pluginInfo.dependencies()) {
-                String dependencyId = dependency.toLowerCase();
-
-                if (!candidates.containsKey(dependencyId))
-                    continue;
-
-                inEdges.get(name).add(dependencyId);
-                outEdges.get(dependencyId).add(name);
-            }
-
-            for (String soft : pluginInfo.softDependencies()) {
-                String softId = soft.toLowerCase();
-
-                if (!candidates.containsKey(softId))
-                    continue;
-
-                inEdges.get(name).add(softId);
-                outEdges.get(softId).add(name);
-            }
-        }
-
-        Queue<String> ready = new ArrayDeque<>();
-
-        inEdges.forEach((key, value) -> {
-            if (value.isEmpty())
-                ready.add(key);
-        });
-
-        List<String> sorted = new ArrayList<>(candidates.size());
-        while (!ready.isEmpty()) {
-            String name = ready.poll();
-            sorted.add(name);
-
-            for (String successor : outEdges.get(name)) {
-                inEdges.get(successor).remove(name);
-
-                if (inEdges.get(successor).isEmpty())
-                    ready.add(successor);
-            }
-        }
-
-        if (sorted.size() != candidates.size()) {
-            Set<String> cycleNodes = new LinkedHashSet<>(candidates.keySet());
-            sorted.forEach(cycleNodes::remove);
-            LOGGER.error("Circular dependency detected among plugins {} – they will not be loaded", cycleNodes);
-            cycleNodes.forEach(n -> disabledPluginMap.put(n, candidates.get(n)));
-        }
-
-        for (String name : sorted)
-            enablePlugin(candidates.get(name));
+        disabledPluginMap.putAll(result.rejected());
+        result.loadOrder().forEach(this::enablePlugin);
 
         temporaryPlugins.clear();
     }
@@ -197,6 +107,4 @@ public class PluginHandler {
         return plugin.getClass().getDeclaredAnnotation(PluginInfo.class);
     }
 
-
 }
-

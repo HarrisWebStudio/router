@@ -1,6 +1,7 @@
 package com.harriswebstudio.router.route.response.impl;
 
 import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.AbstractRouteResponse;
 import lombok.Getter;
 
@@ -15,7 +16,7 @@ public class BytesResponse extends AbstractRouteResponse {
     }
 
     @Override
-    public String getBody() {
+    public String getBody(RouteContext context) {
         return "";
     }
 

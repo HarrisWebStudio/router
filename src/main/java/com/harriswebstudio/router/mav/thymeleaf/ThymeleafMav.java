@@ -1,36 +1,42 @@
 package com.harriswebstudio.router.mav.thymeleaf;
 
 import com.harriswebstudio.router.mav.AbstractMav;
+import com.harriswebstudio.router.route.RouteContext;
 import com.harriswebstudio.router.route.response.mav.ModelAndView;
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.context.WebContext;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 public class ThymeleafMav extends AbstractMav {
 
-    private final TemplateEngine templateEngine;
+    private static final TemplateEngine ENGINE;
+    private static final ClassLoaderTemplateResolver RESOLVER;
 
-    public ThymeleafMav() {
-        ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
-        resolver.setPrefix("templates/");
-        resolver.setSuffix(".html");
-        resolver.setTemplateMode(TemplateMode.HTML);
-        resolver.setCharacterEncoding("UTF-8");
-        resolver.setCacheable(false);
+    static {
+        RESOLVER = new ClassLoaderTemplateResolver();
+        RESOLVER.setPrefix("templates/");
+        RESOLVER.setSuffix(".html");
+        RESOLVER.setTemplateMode(TemplateMode.HTML);
+        RESOLVER.setCharacterEncoding("UTF-8");
+        RESOLVER.setCacheable(false);
 
-        this.templateEngine = new TemplateEngine();
-        templateEngine.setTemplateResolver(resolver);
-        templateEngine.addDialect(new LayoutDialect());
+        ENGINE = new TemplateEngine();
+        ENGINE.setTemplateResolver(RESOLVER);
+        ENGINE.addDialect(new LayoutDialect());
     }
 
     @Override
-    public String process(ModelAndView view) {
-        Context context = new Context();
-        context.setVariables(view.getModel());
+    public String process(ModelAndView view, RouteContext context) {
+        if (context == null)
+            return ENGINE.process(view.getViewName(), new Context());
 
-        return templateEngine.process(view.getViewName(), context);
+        ThymeleafWebExchange exchange = new ThymeleafWebExchange(context);
+        WebContext webContext = new WebContext(exchange, exchange.getLocale(), view.getModel());
+
+        return ENGINE.process(view.getViewName(), webContext);
     }
 
 }

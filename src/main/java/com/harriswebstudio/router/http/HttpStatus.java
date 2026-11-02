@@ -82,6 +82,7 @@ public enum HttpStatus {
         for (HttpStatus status : values())
             if (status.code == code)
                 return status;
+
         return INTERNAL_SERVER_ERROR;
     }
 

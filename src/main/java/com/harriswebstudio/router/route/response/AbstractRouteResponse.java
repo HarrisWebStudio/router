@@ -1,6 +1,7 @@
 package com.harriswebstudio.router.route.response;
 
 import com.harriswebstudio.router.http.HttpStatus;
+import com.harriswebstudio.router.route.RouteContext;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,7 +20,7 @@ public abstract class AbstractRouteResponse {
 
     private final Map<String, String> headers = new HashMap<>();
 
-    public abstract String getBody();
+    public abstract String getBody(RouteContext context);
 
     public <T extends AbstractRouteResponse> T withHeader(String name, String value) {
         headers.put(name, value);

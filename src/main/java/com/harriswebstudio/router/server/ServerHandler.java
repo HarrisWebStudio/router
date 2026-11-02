@@ -81,6 +81,7 @@ public class ServerHandler extends Handler.Abstract {
         RouteBeforeModule beforeModule = router.getModule(RouteBeforeModule.class);
         if (beforeModule != null) {
             AbstractRouteResponse early = beforeModule.handle(context);
+
             if (early != null) {
                 write(null, context, route.getMethod().name(), requestStartTime, response, callback, early);
                 return;
@@ -109,7 +110,7 @@ public class ServerHandler extends Handler.Abstract {
         if (routeResponse instanceof BytesResponse bytesResponse) {
             response.write(true, ByteBuffer.wrap(bytesResponse.getBytes()), callback);
         } else {
-            response.write(true, ByteBuffer.wrap(routeResponse.getBody().getBytes(StandardCharsets.UTF_8)), callback);
+            response.write(true, ByteBuffer.wrap(routeResponse.getBody(context).getBytes(StandardCharsets.UTF_8)), callback);
         }
 
         router.getEventHandler().callEvent(new PostRouteServeEvent(
@@ -128,6 +129,10 @@ public class ServerHandler extends Handler.Abstract {
         if (forwardedForHeader != null && !forwardedForHeader.isBlank())
             return forwardedForHeader.split(",")[0].trim();
 
+        String realIp = request.getHeaders().get("X-Real-IP");
+        if (realIp != null && !realIp.isEmpty())
+            return realIp.trim();
+
         String forwardedHeader = request.getHeaders().get("Forwarded");
         if (forwardedHeader != null && !forwardedHeader.isBlank()) {
             for (String part : forwardedHeader.split(";")) {
@@ -139,7 +144,6 @@ public class ServerHandler extends Handler.Abstract {
         }
 
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
-
         if (remote instanceof InetSocketAddress socketAddress) {
             InetAddress address = socketAddress.getAddress();
 

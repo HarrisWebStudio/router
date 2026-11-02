@@ -225,8 +225,10 @@ public class RouteContext {
 
     public Map<String, String> getHeaders() {
         Map<String, String> map = new HashMap<>();
+
         for (HttpField field : request.getHeaders())
             map.put(field.getName(), field.getValue());
+        
         return map;
     }
 
